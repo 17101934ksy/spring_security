@@ -2,14 +2,19 @@ package springsecuritytoy1.springsecuritytoy1.securityconfig;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.security.web.savedrequest.RequestCache;
+
 import javax.servlet.http.HttpSession;
 
 @Slf4j
@@ -18,36 +23,51 @@ import javax.servlet.http.HttpSession;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    private final UserDetailsService userDetailsService;
-
     @Bean
-    public WebSecurityCustomizer webSecurityCustomizer() {
-        return (web) -> web.ignoring().antMatchers("/ignore1", "/ignore2");
+    public UserDetailsService userDetailsService(PasswordEncoder encoder) {
+        InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager();
+        manager.createUser(User.withUsername("admin").password(encoder.encode("1111")).roles("ADMIN", "USER", "SYS").build());
+        manager.createUser(User.withUsername("user").password(encoder.encode("1111")).roles("USER").build());
+        manager.createUser(User.withUsername("sys").password(encoder.encode("1111")).roles("SYS", "USER").build());
+
+        return manager;
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public PasswordEncoder passwordEncoder(){
+        return new BCryptPasswordEncoder();
+    }
+
+
+    @Bean
+    protected SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeRequests()
-                .anyRequest().authenticated()
+                .antMatchers("/login").permitAll()
+                .antMatchers("/user").hasRole("USER")
+                .antMatchers("/admin/pay").hasRole("ADMIN")
+                .antMatchers("/admin/**").access("hasRole('ADMIN') or hasRole('SYS')")
+                .anyRequest().authenticated();
 
-        .and()
+        http
                 .formLogin()
 //                .loginPage("/loginPage")
                 .defaultSuccessUrl("/")
                 .failureForwardUrl("/login")
                 .loginProcessingUrl("/login")
                 .successHandler((request, response, authentication) -> {
-                    System.out.println("authentication = " + authentication.getName());
-                    response.sendRedirect("/");
+                    log.info("authentication name = {}", authentication.getName());
+                    log.info("request.getSession = {}", request.getSession().getId());
+
+                    RequestCache requestCache = new HttpSessionRequestCache();
+                    response.sendRedirect(requestCache.getRequest(request, response).getRedirectUrl());
                 })
                 .failureHandler((request, response, exception) -> {
-                    System.out.println("exception.getMessage() = " + exception.getMessage());
+                    log.info("exception.getMessage() = {}", exception.getMessage());
                     response.sendRedirect("/login");
-                })
-                .permitAll()
+                });
 
-        .and()
+        http
                 .logout()
                 .logoutUrl("/logout")
                 .logoutSuccessUrl("/login")
@@ -59,13 +79,22 @@ public class SecurityConfig {
                     response.sendRedirect("login");
                     log.info("logoutSuccessHandler complete");
                 })
-                .deleteCookies("remember-me")
+                .deleteCookies("remember-me");
 
-        .and()
+        http
                 .rememberMe()
                 .rememberMeParameter("remember")
                 .tokenValiditySeconds(3600)
-                .userDetailsService(userDetailsService);
+                .userDetailsService(userDetailsService(passwordEncoder()));
+
+        http
+                .exceptionHandling()
+//                .authenticationEntryPoint((request, response, authException) ->
+//                        response.sendRedirect("/login"))
+                .accessDeniedHandler((request, response, exception)-> {
+                    log.info("loginDenied message = {}", exception.getMessage());
+                    response.sendRedirect("/denied");
+                });
 
         return http.build();
     }
