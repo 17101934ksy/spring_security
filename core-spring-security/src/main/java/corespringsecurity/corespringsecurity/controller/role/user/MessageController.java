@@ -1,4 +1,4 @@
-package corespringsecurity.corespringsecurity.controller.user;
+package corespringsecurity.corespringsecurity.controller.role.user;
 
 
 import org.springframework.stereotype.Controller;
