@@ -1,11 +1,9 @@
 package corespringsecurity.corespringsecurity.domain;
 
+import corespringsecurity.corespringsecurity.controller.member.RoleType;
 import lombok.*;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
+import javax.persistence.*;
 
 @Entity
 @Getter
@@ -21,13 +19,19 @@ public class Member extends BaseEntity {
     private String password;
     private String email;
     private int age;
-    private String role;
 
-    public Member (String username, String password, String email, String role) {
+    @Enumerated(EnumType.STRING)
+    private RoleType role;
+
+    public Member (String username, String password, String email, RoleType role) {
         this.username = username;
         this.password = password;
         this.email = email;
         this.role = role;
+    }
+
+    public void updatePassword(String password) {
+        this.password = password;
     }
 
     public void updateMemberInfo(int age) {
