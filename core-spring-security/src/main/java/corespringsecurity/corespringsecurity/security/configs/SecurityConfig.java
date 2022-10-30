@@ -49,7 +49,11 @@ public class SecurityConfig {
                 .anyRequest().authenticated();
 
         http
-                .formLogin();
+                .formLogin()
+                .loginPage("/login")
+                .loginProcessingUrl("/login_proc")
+                .defaultSuccessUrl("/")
+                .permitAll();
 
         http
                 .logout()
