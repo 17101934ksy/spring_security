@@ -2,6 +2,7 @@ package corespringsecurity.corespringsecurity.controller.member;
 
 import corespringsecurity.corespringsecurity.domain.Member;
 import corespringsecurity.corespringsecurity.domain.MemberDto;
+import corespringsecurity.corespringsecurity.domain.RoleType;
 import corespringsecurity.corespringsecurity.service.MemberService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +38,7 @@ public class MemberController {
         log.info("member.email = {}", member.getEmail());
         log.info("member.age = {}", member.getAge());
         log.info("member.username = {}", member.getUsername());
+        log.info("member.role = {}", member.getRole());
 
         memberService.createMember(member);
 

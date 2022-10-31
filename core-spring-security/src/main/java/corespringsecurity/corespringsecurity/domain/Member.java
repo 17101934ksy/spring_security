@@ -1,6 +1,5 @@
 package corespringsecurity.corespringsecurity.domain;
 
-import corespringsecurity.corespringsecurity.controller.member.RoleType;
 import lombok.*;
 
 import javax.persistence.*;
